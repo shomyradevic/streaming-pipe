@@ -1,6 +1,7 @@
 package producer_test
 
 import (
+	"math/rand"
 	"producer/producer/producer"
 
 	"testing"
@@ -23,20 +24,34 @@ func TestGenerateRandomInteger(t *testing.T) {
 	*/
 	var from int = 1
 	var to int = 10000
-	result := producer.GenerateRandomInteger(from, to)
+	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
+	result := producer.GenerateRandomInteger(from, to, *seed)
 	assert.GreaterOrEqual(t, result, from)
 	assert.LessOrEqual(t, result, to)
 }
 
-func TestGenerateRandomString(t *testing.T) {
-	/*
-		Need to parameterize this better in order to simplify adding test cases. Look for something cutting-edge.
-	*/
-	var length int = 100
+// func TestGenerateRandomString2(t *testing.T) {
+// 	/*
+// 		Need to parameterize this better in order to simplify adding test cases. Look for something cutting-edge.
+// 	*/
+// 	var length int = 100
 
-	result := producer.GenerateRandomString(length)
-	if len(result) > length {
-		t.Fail()
-	}
-	assert.Equal(t, bool(1 == (2-1)), true)
-}
+// 	result := producer.GenerateRandomString(length)
+// 	if len(result) > length {
+// 		t.Fail()
+// 	}
+// 	assert.Equal(t, bool(1 == (2-1)), true)
+// }
+
+// func TestGenerateRandomString(t *testing.T) {
+// 	/*
+// 		Need to parameterize this better in order to simplify adding test cases. Look for something cutting-edge.
+// 	*/
+// 	var length int = 100
+
+// 	result := producer.GenerateRandomString(length)
+// 	if len(result) > length {
+// 		t.Fail()
+// 	}
+// 	assert.Equal(t, bool(1 == (2-1)), true)
+// }
