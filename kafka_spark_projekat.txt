@@ -1,0 +1,106 @@
+
+(02.06.2025)
+Twitter API <---- GoLang producer ----> kafka_topic_raw(t1) <----- Python consumer(A) ----> kafka_topic_processed(t2) <----- Python consumer(B) -----> Google BigQuery(G) <------- AI
+
+
+
+Entities:
+- Kafka topic "raw"		
+- Kafka topic "processed"
+- Golang Producer		(dockerized)
+- Python Consumer A		(dockerized)
+- Python Consumer B		(dockerized)
+
+
+
+Legend:
+
+A -> Spark consumer
+B -> Spark consumer / lightweight .py script ?
+t1 -> raw messages from twitter API
+t2 -> processed messages
+G -> Free plan. Looks like 10Gbs per month are free, as well as first scanned terrabyte. Possibly some other stuff. They have ML features also, which may be handy if we decide to analyze twitter content and produce a conclusion, which isnt impossible to happen.
+AI -> (Questionable) -> Analyze people's tweets to and provide insights on people's behaviour (negativity, some other stuff maybe ...) 
+
+
+TODO:
+- Enforce TDD from the very beginning !
+- Learn Kubernetes Helm charts ( basics )
+- Learn how to write&use reusable function & fixtures for unit test so we can build it with focusing on BDD!
+
+
+
+IMPORTANT:
+- Strong typization & dependency versioning!
+
+
+(4.6.2025)
+- Whatever warehouse provider you choose - keep in mind if choosing free plan that you need to know exactly what & how needs to be configured because the clock is ticking.
+
+
+(5.6.2025)
+- Definitely we decided to go with the Fake Twitter data
+- Until we create an warehouse account, we're gonna dump all data to local disk/s3/duck db/ sqlite / ...
+
+
+REPO Overview:
+
+consumers/
+	consumer_a.py
+	consumer_b.py
+producers/
+	producer.go
+docker-compose.yml
+makefile
+tests/
+	consumer/
+		test_x.py
+		test_y.py
+	producer/
+		test.go
+utils/
+	<creative_name>.py
+build/
+	producer/
+		dockerfile
+		dependencies.go / whatever
+	consumer_a/
+		dockerfile
+		requirements.txt
+	consumer_b/
+		dockerfile
+		requirements.txt
+python_venv/
+golang_env/ (?)
+.gitignore
+
+	
+	
+	
+Repo in detail
+	
+docker-compose.yml services:
+	- producer
+		- build: "build/producer/dockerfile"
+	- consumer_a
+		- build: "build/consumer_a/dockerfile"
+	- consumer_b
+		- build: "build/consumer_b/dockerfile"
+	- kafka_broker
+		- probably just pull image and set env vars & ports
+	- zookeper
+		- probably just pull image and set env vars & ports
+		
+makefile?
+	- running locally, running tests, code formatters&linters, 
+		
+		
+Questions:
+- How is the deployment going to look like? Maybe we figure a better setup if we reverse-engineer this...
+		- Do we want to treat each consumer and producer separately?
+			- I think yes because we want to be able to scale only one entity without affecting others. If so, this is a verification that we
+			do need to make separate containers for consumers A & B.
+- Is this a good case for the microservice infrastructure?
+- What about golang unit tests?
+	- Nothing, we will have them as well as python ones, grouped in the same folder, but different subfolder.
+	
