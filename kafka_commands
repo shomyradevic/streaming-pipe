@@ -1,0 +1,40 @@
+## Start docker compose
+docker compose -f ./docker-compose.yml --project-name sparkkafkademo up
+
+## Create a topic
+docker exec -it kafka kafka-topics --create --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic input
+
+## Console Consumer
+docker exec -it kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic output
+
+## Console Producer
+docker exec -it kafka kafka-console-producer --bootstrap-server kafka:9092 --topic input
+
+## Transaction Sample
+{"transaction_id": "1", "customer_id": "123", "amount": 20, "transaction_timestamp": "2023-04-21T09:30:00Z", "merchant_id": "MerchantX"}
+{"transaction_id": "2", "customer_id": "123", "amount": 20, "transaction_timestamp": "2023-04-21T09:30:00Z", "merchant_id": "MerchantY"}
+{"transaction_id": "3", "customer_id": "123", "amount": 20, "transaction_timestamp": "2023-04-22T09:30:00Z", "merchant_id": "MerchantX"}
+{"transaction_id": "4", "customer_id": "321", "amount": 667, "transaction_timestamp": "2023-04-28T09:30:00Z", "merchant_id": "MerchantX"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## StructType
+df_schema = StructType([
+    StructField("transaction_id", StringType(), True),
+    StructField("customer_id", StringType(), True),
+    StructField("amount", IntegerType(), True),
+    StructField("transaction_timestamp", TimestampType(), True),
+    StructField("merchant_id", StringType(), True)
+])

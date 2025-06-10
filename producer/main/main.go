@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"producer/producer/producer"
 	"time"
+
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 /*
@@ -16,7 +18,7 @@ import (
 4. Produce logs to the logs/
 */
 
-func sendToKafkaTopic(topicName string) {
+func createAndSendToTopic(topicName string) {
 
 	var edited = [2]bool{true, false}
 
@@ -33,17 +35,41 @@ func sendToKafkaTopic(topicName string) {
 		"created_at": producer.GenerateRandomDateTime(),
 		"edited":     edited[producer.GenerateRandomInteger(0, 1, *seed)]}
 
+	sendToKafkaTopic(tweet, topicName)
+
+}
+
+func sendToKafkaTopic(tweet map[string]any, topicName string) {
+
 	formatted, err := json.MarshalIndent(tweet, "", "  ")
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 	fmt.Println("tweet:", string(formatted))
+
+	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+	if err != nil {
+		fmt.Println("Failed to create producer!")
+	}
+	defer producer.Close()
+
+	err = producer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topicName, Partition: kafka.PartitionAny},
+		Value:          formatted,
+	}, nil)
+
+	if err != nil {
+		fmt.Println("Error", err)
+	}
+
+	producer.Flush(5000)
+
 }
 
 func run(workerCount uint8, messageCount int) {
 	fmt.Println("Using workers: ", workerCount)
 	for i := 0; i < messageCount; i++ {
-		sendToKafkaTopic("raw_topic")
+		createAndSendToTopic("raw-topic")
 	}
 }
 

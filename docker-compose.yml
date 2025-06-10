@@ -1,0 +1,94 @@
+services:
+  docs:
+    container_name: docs
+    image: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - "./nginx/html:/usr/share/nginx/html:ro"
+
+  master:
+    container_name: master
+    image: arjones/pyspark:2.4.5
+    restart: always
+    command: ["/opt/spark/sbin/start-master.sh"]
+    environment:
+      MASTER: spark://master:7077
+      SPARK_NO_DAEMONIZE: 1
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+    volumes:
+      - ./code:/app
+      - ./dataset:/dataset
+
+  worker1:
+    container_name: worker1
+    image: arjones/pyspark:2.4.5
+    restart: always
+    command: ["/opt/spark/sbin/start-slave.sh", "spark://master:7077"]
+    environment:
+      MASTER: spark://master:7077
+      SPARK_NO_DAEMONIZE: 1
+    depends_on:
+      - master
+    ports:
+      - 4041:4040
+      - "6066"
+      - "7077"
+      - 8081:8080
+    volumes:
+      - ./code:/app
+      - ./dataset:/dataset
+
+  worker2:
+    container_name: worker2
+    image: arjones/pyspark:2.4.5
+    restart: always
+    command: ["/opt/spark/sbin/start-slave.sh", "spark://master:7077"]
+    environment:
+      MASTER: spark://master:7077
+      SPARK_NO_DAEMONIZE: 1
+    depends_on:
+      - master
+    ports:
+      - 4042:4040
+      - "6066"
+      - "7077"
+      - 8082:8080
+    volumes:
+      - ./code:/app
+      - ./dataset:/dataset
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    expose:
+      - 2181
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    expose:
+      - 9092
+    ports:
+      - "9092:9092"
+
+  # producer:
+  #   container_name: producer
+  #   build:
+  #     context: .
+  #     dockerfile: producer/Dockerfile
+# The producer service is possible close to ready, we first need to test does the kafka topic receive messages without the container
