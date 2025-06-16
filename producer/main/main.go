@@ -7,7 +7,7 @@ import (
 	"producer/producer/producer"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 /*
@@ -70,6 +70,7 @@ func run(workerCount uint8, messageCount int) {
 	fmt.Println("Using workers: ", workerCount)
 	for i := 0; i < messageCount; i++ {
 		createAndSendToTopic("raw-topic")
+		// time.Sleep(time.Second)
 	}
 }
 
