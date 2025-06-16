@@ -86,9 +86,18 @@ services:
     ports:
       - "9092:9092"
 
-  # producer:
-  #   container_name: producer
-  #   build:
-  #     context: .
-  #     dockerfile: producer/Dockerfile
-# The producer service is possible close to ready, we first need to test does the kafka topic receive messages without the container
+  producer:  # Looks like this works!
+    container_name: producer
+    build:
+      context: .
+      dockerfile: build/producer/Dockerfile
+    depends_on:
+      - kafka
+
+  consumer-raw:  # Looks like this works!
+    container_name: consumer-raw
+    build:
+      context: .
+      dockerfile: build/consumer-raw/Dockerfile
+    depends_on:
+      - master

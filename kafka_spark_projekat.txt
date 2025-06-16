@@ -43,6 +43,11 @@ IMPORTANT:
 - Until we create an warehouse account, we're gonna dump all data to local disk/s3/duck db/ sqlite / ...
 
 
+(16.6.2025)
+- Installed Java 17 ( b/c using spark 4.0.0 )
+- Currently i have the golang build error ( kafka library )
+
+
 REPO Overview:
 
 consumers/

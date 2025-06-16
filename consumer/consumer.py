@@ -1,10 +1,10 @@
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 from pyspark.sql.types import *
+import os
 
-# import findspark missing ! C h e c k ...
 
-# Creating a Spark Session
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-10_2.13:4.0.0,org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.0 pyspark-shell'
 
 print("Creating Spark session!")
 
@@ -53,7 +53,7 @@ df_schema = StructType([
 print("Creating Read stream!")
 
 # Read stream
-df = spark.readStream().\
+df = spark.readStream.\
     format("kafka").\
     options(**kafka_input_config).\
     load().\
@@ -69,3 +69,4 @@ df = spark.readStream().\
 
 print("Printing df :")
 print(df)
+
