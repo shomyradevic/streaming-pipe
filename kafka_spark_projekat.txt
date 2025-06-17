@@ -46,6 +46,7 @@ IMPORTANT:
 (16.6.2025)
 - Installed Java 17 ( b/c using spark 4.0.0 )
 - Currently i have the golang build error ( kafka library )
+	- Fixed it by just downgrading confluent-kafka-go do v1.0.0 from v1.9.2. Dockerfile is still basic, practically.
 
 
 REPO Overview:

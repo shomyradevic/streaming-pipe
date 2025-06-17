@@ -54,7 +54,7 @@ func sendToKafkaTopic(tweet map[string]any, topicName string) {
 	defer producer.Close()
 
 	err = producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topicName, Partition: kafka.PartitionAny},
+		TopicPartition: kafka.TopicPartition{Topic: &topicName, Partition: int32(-1)}, // equivalent to kafka.PartitionAny
 		Value:          formatted,
 	}, nil)
 
