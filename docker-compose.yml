@@ -101,3 +101,7 @@ services:
       dockerfile: build/consumer-raw/Dockerfile
     depends_on:
       - master
+      - worker1
+      - worker2
+      - kafka
+      - producer
