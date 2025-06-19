@@ -48,6 +48,14 @@ IMPORTANT:
 - Currently i have the golang build error ( kafka library )
 	- Fixed it by just downgrading confluent-kafka-go do v1.0.0 from v1.9.2. Dockerfile is still basic, practically.
 
+(19.6.2025)
+- Increased producer performance massively, but seems like it still can be better ( just worker count or smth else? )
+1. Modify consumer-raw to format data and send it to another topic
+	a) Figure out if we need to modify original data to be able to do data processing (perhaps add aggregates or whatever)
+	b) Check if you can do a partition cleanup, in case many stale messages ( need to inspect )
+	c) create processed-topic
+2. If you catch time, increase worker count
+
 
 REPO Overview:
 
