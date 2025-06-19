@@ -66,6 +66,11 @@ df = spark.readStream.\
     ).select("json_data.*")
 
 
-query = df.writeStream.format("console").start()
+query = df.writeStream.\
+    format("console")\
+    .trigger(processingTime="100 milliseconds")\
+    .start()
 
 query.awaitTermination()
+
+

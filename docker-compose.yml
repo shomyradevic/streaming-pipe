@@ -86,7 +86,7 @@ services:
     ports:
       - "9092:9092"
 
-  producer:  # Looks like this works!
+  producer:
     container_name: producer
     build:
       context: .
@@ -94,7 +94,7 @@ services:
     depends_on:
       - kafka
 
-  consumer-raw:  # Looks like this works!
+  consumer-raw: 
     container_name: consumer-raw
     build:
       context: .
@@ -103,5 +103,3 @@ services:
       - master
       - worker1
       - worker2
-      - kafka
-      - producer
