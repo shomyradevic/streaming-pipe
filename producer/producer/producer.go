@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
@@ -8,26 +9,20 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func GenerateRandomDateTime() time.Time {
+// ---------------------------------------- PRIVATE -------------------------------------------------------
+
+func generateRandomDateTime() time.Time {
 	start := time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Now()
 	randSeconds := rand.Int63n(end.Unix() - start.Unix())
 	return start.Add(time.Duration(randSeconds) * time.Second)
 }
 
-func GenerateRandomInteger(from int, to int, rnd rand.Rand) int {
+func generateRandomInteger(from int, to int, rnd rand.Rand) int {
 	return from + rnd.Intn(to-from) + 1
 }
 
-func CreateProducer() *kafka.Producer {
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
-	if err != nil {
-		fmt.Println("Failed to create producer!")
-	}
-	return producer
-}
-
-func GetRandomString(key int) string {
+func getRandomString(key int) string {
 	var allPossibleMessages = map[int]string{
 		1:  "Be aware that system clock changes (e.g., time zone changes, NTP synchronization) can affect the accuracy of the measurements.",
 		2:  "The methods above measure \"wall time\" (real-world elapsed time), which includes time spent waiting for I/O or other operations. If you need to measure CPU time specifically, you might need platform-specific methods.",
@@ -41,4 +36,45 @@ func GetRandomString(key int) string {
 		10: "Threads are heavyweight and need more memory allocated to it.",
 	}
 	return allPossibleMessages[key]
+}
+
+// ----------------------------------------- PUBLIC ------------------------------------------------------
+
+func CreateProducer() *kafka.Producer {
+	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+	if err != nil {
+		fmt.Println("Failed to create producer!")
+	}
+	return producer
+}
+
+func CreateMessage() map[string]any {
+	var edited = [2]bool{true, false}
+	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
+	tweet := map[string]any{
+		"id":         generateRandomInteger(1000000, 10000000, *seed),
+		"text":       getRandomString(generateRandomInteger(1, 10+1, *seed)),
+		"author_id":  generateRandomInteger(100000, 1000000, *seed),
+		"likes":      generateRandomInteger(1000, 100000, *seed),
+		"retweets":   generateRandomInteger(100, 5000, *seed),
+		"created_at": generateRandomDateTime(),
+		"edited":     edited[generateRandomInteger(0, 1, *seed)],
+	}
+	return tweet
+}
+
+func SendToKafkaTopic(message map[string]any, messageIndex int, topicName string, kafkaProducer *kafka.Producer) {
+	formatted, err := json.MarshalIndent(message, "", "  ")
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	err = kafkaProducer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topicName, Partition: int32(-1)}, // equivalent to kafka.PartitionAny
+		Value:          formatted,
+	}, nil)
+
+	if err != nil {
+		fmt.Println("Error while sending message:", err)
+	}
 }
