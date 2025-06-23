@@ -32,8 +32,6 @@ services:
     environment:
       MASTER: spark://master:7077
       SPARK_NO_DAEMONIZE: 1
-    depends_on:
-      - master
     ports:
       - 4041:4040
       - "6066"
@@ -42,6 +40,8 @@ services:
     volumes:
       - ./code:/app
       - ./dataset:/dataset
+    depends_on:
+      - master
 
   worker2:
     container_name: worker2
@@ -51,8 +51,6 @@ services:
     environment:
       MASTER: spark://master:7077
       SPARK_NO_DAEMONIZE: 1
-    depends_on:
-      - master
     ports:
       - 4042:4040
       - "6066"
@@ -61,6 +59,8 @@ services:
     volumes:
       - ./code:/app
       - ./dataset:/dataset
+    depends_on:
+      - master
 
   zookeeper:
     container_name: zookeeper
@@ -74,8 +74,6 @@ services:
   kafka:
     container_name: kafka
     image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -85,6 +83,8 @@ services:
       - 9092
     ports:
       - "9092:9092"
+    depends_on:
+      - zookeeper
 
   producer:
     container_name: producer
@@ -103,3 +103,4 @@ services:
       - master
       - worker1
       - worker2
+      - kafka

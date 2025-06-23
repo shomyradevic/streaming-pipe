@@ -46,16 +46,28 @@ IMPORTANT:
 (16.6.2025)
 - Installed Java 17 ( b/c using spark 4.0.0 )
 - Currently i have the golang build error ( kafka library )
-	- Fixed it by just downgrading confluent-kafka-go do v1.0.0 from v1.9.2. Dockerfile is still basic, practically.
+	- Fixed it by just downgrading confluent-kafka-go to v1.0.0 from v1.9.2. Dockerfile is still basic, practically.
 
 (19.6.2025)
 - Increased producer performance massively, but seems like it still can be better ( just worker count or smth else? )
 1. Modify consumer-raw to format data and send it to another topic
-	a) Figure out if we need to modify original data to be able to do data processing (perhaps add aggregates or whatever)
-	b) Check if you can do a partition cleanup, in case many stale messages ( need to inspect )
-	c) create processed-topic
+	a) Figure out if we need to modify original data to be able to do data processing (perhaps add aggregates or whatever) (y)
+	b) Check if you can do a partition cleanup, in case many stale messages ( need to inspect ) (y)
+		- Looks like it isn't configured yet, so no messages are in there!
+	c) create processed-topic (y)
 2. If you catch time, increase worker count
 
+(23.6.2025)
+- Implemented:
+
+	Producer -> K(raw_topic) <- Consumer-raw -> K(processed-topic)
+
+- Currently facing with error - traceback at the this file's bottom 
+- Next steps are:
+	1. Making sure that the above flow works smoothly
+	2. Getting to know databricks before we purchase free plan ( i think 14 days )
+			a) Need to know much of the stuff, especially streaming part ( if available in free plan )
+			b) When a) is finished, implement Consumer-processed entity which is going to write to databricks. 
 
 REPO Overview:
 
@@ -118,3 +130,229 @@ Questions:
 - What about golang unit tests?
 	- Nothing, we will have them as well as python ones, grouped in the same folder, but different subfolder.
 	
+
+
+Golang producer error:
+
+
+producer  | Using workers:  1
+producer  | Execution time:  1.394338119s
+producer  | %4|1750702590.198|TERMINATE|rdkafka#producer-1| [thrd:app]: Producer terminating with 6 messages (1526 bytes) still in queue or transit: use flush() to wait for outstanding message delivery
+producer  | SIGSEGV: segmentation violation
+producer  | PC=0x760d332f8684 m=11 sigcode=1 addr=0x760cec0e9a60
+producer  | signal arrived during cgo execution
+producer  | 
+producer  | goroutine 1 gp=0xc0000061c0 m=11 mp=0xc001088808 [syscall]:
+producer  | runtime.cgocall(0x4c8ba0, 0xc00384fda0)
+producer  |     /usr/local/go/src/runtime/cgocall.go:157 +0x4b fp=0xc00384fd78 sp=0xc00384fd40 pc=0x40920b
+producer  | github.com/confluentinc/confluent-kafka-go/kafka._Cfunc_rd_kafka_outq_len(0x760cec0e9050)
+producer  |     _cgo_gotypes.go:1804 +0x47 fp=0xc00384fda0 sp=0xc00384fd78 pc=0x4bce27
+producer  | github.com/confluentinc/confluent-kafka-go/kafka.(*Producer).Len.func1(0x492193?)
+producer  |     /go/pkg/mod/github.com/confluentinc/confluent-kafka-go@v1.1.0/kafka/producer.go:322 +0x3f fp=0xc00384fde0 sp=0xc00384fda0 pc=0x4c3b3f
+producer  | github.com/confluentinc/confluent-kafka-go/kafka.(*Producer).Len(0xc20e8460cbdc9413?)
+producer  |     /go/pkg/mod/github.com/confluentinc/confluent-kafka-go@v1.1.0/kafka/producer.go:322 +0x3c fp=0xc00384fe08 sp=0xc00384fde0 pc=0x4c3abc
+producer  | github.com/confluentinc/confluent-kafka-go/kafka.(*Producer).Flush(0xc0000ae000, 0x1388)
+producer  |     /go/pkg/mod/github.com/confluentinc/confluent-kafka-go@v1.1.0/kafka/producer.go:334 +0x109 fp=0xc00384fe80 sp=0xc00384fe08 pc=0x4c3c89
+producer  | main.main.deferwrap1()
+producer  |     /app/producer/main/main.go:25 +0x25 fp=0xc00384fea0 sp=0xc00384fe80 pc=0x4c7125
+producer  | main.main()
+producer  |     /app/producer/main/main.go:34 +0x15a fp=0xc00384ff50 sp=0xc00384fea0 pc=0x4c707a
+producer  | runtime.main()
+producer  |     /usr/local/go/src/runtime/proc.go:271 +0x29d fp=0xc00384ffe0 sp=0xc00384ff50 pc=0x43e0bd
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc00384ffe8 sp=0xc00384ffe0 pc=0x46dfc1
+producer  | 
+producer  | goroutine 18 gp=0xc000082380 m=nil [force gc (idle)]:
+producer  | runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc0000427a8 sp=0xc000042788 pc=0x43e4ee
+producer  | runtime.goparkunlock(...)
+producer  |     /usr/local/go/src/runtime/proc.go:408
+producer  | runtime.forcegchelper()
+producer  |     /usr/local/go/src/runtime/proc.go:326 +0xb3 fp=0xc0000427e0 sp=0xc0000427a8 pc=0x43e373
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000427e8 sp=0xc0000427e0 pc=0x46dfc1
+producer  | created by runtime.init.6 in goroutine 1
+producer  |     /usr/local/go/src/runtime/proc.go:314 +0x1a
+producer  | 
+producer  | goroutine 19 gp=0xc000082540 m=nil [GC sweep wait]:
+producer  | runtime.gopark(0x1?, 0x0?, 0x0?, 0x0?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000042f80 sp=0xc000042f60 pc=0x43e4ee
+producer  | runtime.goparkunlock(...)
+producer  |     /usr/local/go/src/runtime/proc.go:408
+producer  | runtime.bgsweep(0xc000090000)
+producer  |     /usr/local/go/src/runtime/mgcsweep.go:318 +0xdf fp=0xc000042fc8 sp=0xc000042f80 pc=0x42a41f
+producer  | runtime.gcenable.gowrap1()
+producer  |     /usr/local/go/src/runtime/mgc.go:203 +0x25 fp=0xc000042fe0 sp=0xc000042fc8 pc=0x41ef25
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc000042fe8 sp=0xc000042fe0 pc=0x46dfc1
+producer  | created by runtime.gcenable in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:203 +0x66
+producer  | 
+producer  | goroutine 20 gp=0xc000082700 m=nil [GC scavenge wait]:
+producer  | runtime.gopark(0x10000?, 0x51b508?, 0x0?, 0x0?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000043778 sp=0xc000043758 pc=0x43e4ee
+producer  | runtime.goparkunlock(...)
+producer  |     /usr/local/go/src/runtime/proc.go:408
+producer  | runtime.(*scavengerState).park(0x5c1960)
+producer  |     /usr/local/go/src/runtime/mgcscavenge.go:425 +0x49 fp=0xc0000437a8 sp=0xc000043778 pc=0x427dc9
+producer  | runtime.bgscavenge(0xc000090000)
+producer  |     /usr/local/go/src/runtime/mgcscavenge.go:658 +0x59 fp=0xc0000437c8 sp=0xc0000437a8 pc=0x428379
+producer  | runtime.gcenable.gowrap2()
+producer  |     /usr/local/go/src/runtime/mgc.go:204 +0x25 fp=0xc0000437e0 sp=0xc0000437c8 pc=0x41eec5
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000437e8 sp=0xc0000437e0 pc=0x46dfc1
+producer  | created by runtime.gcenable in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:204 +0xa5
+producer  | 
+producer  | goroutine 21 gp=0xc000082c40 m=nil [finalizer wait]:
+producer  | runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000043e20 sp=0xc000043e00 pc=0x43e4ee
+producer  | runtime.runfinq()
+producer  |     /usr/local/go/src/runtime/mfinal.go:194 +0x107 fp=0xc000043fe0 sp=0xc000043e20 pc=0x41df67
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc000043fe8 sp=0xc000043fe0 pc=0x46dfc1
+producer  | created by runtime.createfing in goroutine 1
+producer  |     /usr/local/go/src/runtime/mfinal.go:164 +0x3d
+producer  | 
+producer  | goroutine 22 gp=0xc000082e00 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0xc00009a000?, 0x0?, 0x0?, 0x0?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000046750 sp=0xc000046730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc0000467e0 sp=0xc000046750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000467e8 sp=0xc0000467e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 34 gp=0xc001044000 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f7077?, 0x1?, 0x11?, 0x70?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc00104a750 sp=0xc00104a730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc00104a7e0 sp=0xc00104a750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc00104a7e8 sp=0xc00104a7e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 23 gp=0xc000082fc0 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f709f?, 0x3?, 0xd3?, 0xc1?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000044750 sp=0xc000044730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc0000447e0 sp=0xc000044750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000447e8 sp=0xc0000447e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 24 gp=0xc000083180 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f74a7?, 0x1?, 0xc1?, 0xaf?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000044f50 sp=0xc000044f30 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc000044fe0 sp=0xc000044f50 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc000044fe8 sp=0xc000044fe0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 25 gp=0xc000083340 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x621b60?, 0x1?, 0x63?, 0x90?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000045750 sp=0xc000045730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc0000457e0 sp=0xc000045750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000457e8 sp=0xc0000457e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 26 gp=0xc000083500 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f6fa5?, 0x3?, 0x4a?, 0x2c?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000045f50 sp=0xc000045f30 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc000045fe0 sp=0xc000045f50 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc000045fe8 sp=0xc000045fe0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 27 gp=0xc0000836c0 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f6f73?, 0x3?, 0x99?, 0x17?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc001046750 sp=0xc001046730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc0010467e0 sp=0xc001046750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0010467e8 sp=0xc0010467e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 28 gp=0xc000083880 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f6f7d?, 0xc0000b20a0?, 0x1a?, 0xa?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc001046f50 sp=0xc001046f30 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc001046fe0 sp=0xc001046f50 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc001046fe8 sp=0xc001046fe0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 2 gp=0xc000007340 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f6e64?, 0x3?, 0xaf?, 0x74?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000046f50 sp=0xc000046f30 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc000046fe0 sp=0xc000046f50 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc000046fe8 sp=0xc000046fe0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 35 gp=0xc0010441c0 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f7095?, 0x3?, 0x2f?, 0xe3?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc00104af50 sp=0xc00104af30 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc00104afe0 sp=0xc00104af50 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc00104afe8 sp=0xc00104afe0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 3 gp=0xc000007500 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fc33d95f2?, 0x1?, 0x5a?, 0x6?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc000047750 sp=0xc000047730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc0000477e0 sp=0xc000047750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc0000477e8 sp=0xc0000477e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | goroutine 36 gp=0xc001044380 m=nil [GC worker (idle)]:
+producer  | runtime.gopark(0x1d8fdb9f7103?, 0x1?, 0x22?, 0x76?, 0x0?)
+producer  |     /usr/local/go/src/runtime/proc.go:402 +0xce fp=0xc00104b750 sp=0xc00104b730 pc=0x43e4ee
+producer  | runtime.gcBgMarkWorker()
+producer  |     /usr/local/go/src/runtime/mgc.go:1310 +0xe5 fp=0xc00104b7e0 sp=0xc00104b750 pc=0x420e05
+producer  | runtime.goexit({})
+producer  |     /usr/local/go/src/runtime/asm_amd64.s:1695 +0x1 fp=0xc00104b7e8 sp=0xc00104b7e0 pc=0x46dfc1
+producer  | created by runtime.gcBgMarkStartWorkers in goroutine 1
+producer  |     /usr/local/go/src/runtime/mgc.go:1234 +0x1c
+producer  | 
+producer  | rax    0xc003850000
+producer  | rbx    0xc00384fda0
+producer  | rcx    0x4c8ba0
+producer  | rdx    0xc00384fd30
+producer  | rdi    0x760cec0e9050
+producer  | rsi    0xc001044a80
+producer  | rbp    0x760cec0e9050
+producer  | rsp    0x760cebd662c0
+producer  | r8     0xc001088808
+producer  | r9     0x0
+producer  | r10    0x47775e13
+producer  | r11    0x0
+producer  | r12    0xc003850000
+producer  | r13    0x4
+producer  | r14    0x0
+producer  | r15    0x6
+producer  | rip    0x760d332f8684
+producer  | rflags 0x10206
+producer  | cs     0x33
+producer  | fs     0x0
+producer  | gs     0x0
+producer exited with code 2
