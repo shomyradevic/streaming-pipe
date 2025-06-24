@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	// "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 // ---------------------------------------- PRIVATE -------------------------------------------------------
@@ -41,7 +42,15 @@ func getRandomString(key int) string {
 // ----------------------------------------- PUBLIC ------------------------------------------------------
 
 func CreateProducer() *kafka.Producer {
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": "kafka:9092",
+
+		/*new stuff*/
+		"queue.buffering.max.messages": "200000",
+		"queue.buffering.max.kbytes":   "1048576",
+		"queue.buffering.max.ms":       "5",
+		"message.send.max.retries":     "10",
+	})
 	if err != nil {
 		fmt.Println("Failed to create producer!")
 	}
@@ -76,5 +85,8 @@ func SendToKafkaTopic(message map[string]any, messageIndex int, topicName string
 
 	if err != nil {
 		fmt.Println("Error while sending message:", err)
+	} else {
+		fmt.Println("msg index", messageIndex)
 	}
+
 }
