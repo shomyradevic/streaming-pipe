@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"producer/producer/producer"
+	"syscall"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -10,10 +13,28 @@ import (
 
 func run(workerCount uint8, messageCount int, kafkaProducer *kafka.Producer, topicName string) {
 	fmt.Println("Using workers: ", workerCount)
+
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
+	/*
+		Looks like this goroutine doesnt prevent producer from just silently stopping at about 30K messages...
+		Maybe its a different signal? We need to investigate whats actually happening and why its just casually stopping...
+	*/
+	go func() {
+		<-sigchan
+		fmt.Println("Flushing...")
+		kafkaProducer.Flush(5000)
+		kafkaProducer.Close()
+		os.Exit(0)
+	}()
+
 	for i := 0; i < messageCount; i++ {
 		message := producer.CreateMessage()
 		producer.SendToKafkaTopic(message, i, topicName, kafkaProducer)
 	}
+	kafkaProducer.Flush(5000)
+	kafkaProducer.Close()
 }
 
 func main() {
@@ -22,8 +43,8 @@ func main() {
 	var kafkaProducer = producer.CreateProducer()
 	var topicName string = "raw-topic"
 
-	defer kafkaProducer.Flush(5000)
-	defer kafkaProducer.Close()
+	// defer kafkaProducer.Flush(5000)
+	// defer kafkaProducer.Close()
 
 	start := time.Now()
 
