@@ -63,6 +63,39 @@ IMPORTANT:
 	Producer -> K(raw_topic) <- Consumer-raw -> K(processed-topic)
 
 - Currently facing with error - traceback at the this file's bottom 
+
+	SOLUTIONS:
+
+	1)
+		If I downgrade golang version from 1.22.8 to 1.21.13, it can run smoothly without crash.
+		Then I upgrade golang version from 1.21.13 to 1.22.8, it crashes again.
+		I can reproduce this. After waiting for a while, it will happen.
+
+
+	NOTES: ( https://github.com/confluentinc/confluent-kafka-go/issues/216 )
+		Flush should not be called regularly.
+		It blocks until the delivery report corresponding to all produce requests has been delivered to your application or until the timeout has elapsed.
+		It's not used internally. 
+		You should typically call it prior to closing your producer to ensure all in-flight messages are delivered (or have resulted in a non-retryable error).
+
+
+	- if i flush after every 1K messages, it does not error out and goes beyond 10K messages. But thats not the way things need to work.
+
+	(ChatGPT)
+	- You're calling .Flush() in a defer, probably like this:
+			`defer producer.Flush(5000)`
+	-> But this is too late — when the defer runs, the producer may already be partially cleaned up, causing a crash deep in the C code (rd_kafka_outq_len).
+
+
+	(ChatGPT)
+	- Librdkafka has an internal queue that has a buffer role -> meaning that each message we produce first goes into this buffer before it gets
+		into the docker network and ultimately, in the kafka queue. If we do not drain/maintain this queue periodically, it will most likely cause
+		an overflow.
+	- This queue is inside librdkafka, in your producer’s memory.
+	- This queue holds messages you've submitted via .Produce() before they're actually sent over the network to Kafka.
+	- Kafka (in the container) never sees the message until it gets through that buffer.
+
+
 - Next steps are:
 	1. Making sure that the above flow works smoothly
 	2. Getting to know databricks before we purchase free plan ( i think 14 days )
