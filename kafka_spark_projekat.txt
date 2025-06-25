@@ -102,6 +102,18 @@ IMPORTANT:
 			a) Need to know much of the stuff, especially streaming part ( if available in free plan )
 			b) When a) is finished, implement Consumer-processed entity which is going to write to databricks. 
 
+
+
+
+(25.6.2025)
+- Looks like that producer container is early exiting. Container logs seem great. So currently in debugging hell of trying to figure out why
+	it early exits. Currently, setting up different docker-compose!
+
+
+
+
+
+
 REPO Overview:
 
 consumers/

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	// "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 // ---------------------------------------- PRIVATE -------------------------------------------------------
@@ -46,10 +45,16 @@ func CreateProducer() *kafka.Producer {
 		"bootstrap.servers": "kafka:9092",
 
 		/*new stuff*/
-		"queue.buffering.max.messages": "200000",
+		"queue.buffering.max.messages": "500000",
 		"queue.buffering.max.kbytes":   "1048576",
 		"queue.buffering.max.ms":       "5",
-		"message.send.max.retries":     "10",
+		"message.send.max.retries":     "3",
+
+		"acks": "all",
+		// "linger.ms":           5,
+		// "delivery.timeout.ms": 60000,
+
+		// "delivery.report.only.error": true, // Set this to reduce report volume -> This crashes!  Prints: Failed to create producer!
 	})
 	if err != nil {
 		fmt.Println("Failed to create producer!")
@@ -85,8 +90,6 @@ func SendToKafkaTopic(message map[string]any, messageIndex int, topicName string
 
 	if err != nil {
 		fmt.Println("Error while sending message:", err)
-	} else {
-		fmt.Println("msg index", messageIndex)
 	}
 
 }
