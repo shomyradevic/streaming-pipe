@@ -45,14 +45,14 @@ func CreateProducer() *kafka.Producer {
 		"bootstrap.servers": "kafka:9092",
 
 		/*new stuff*/
-		"queue.buffering.max.messages": "500000",
-		"queue.buffering.max.kbytes":   "1048576",
-		"queue.buffering.max.ms":       "5",
-		"message.send.max.retries":     "3",
-
-		"acks": "all",
-		// "linger.ms":           5,
-		// "delivery.timeout.ms": 60000,
+		"queue.buffering.max.messages": 10000,
+		"queue.buffering.max.kbytes":   512000,
+		"queue.buffering.max.ms":       5,
+		"batch.num.messages":           1000,
+		"message.send.max.retries":     3,
+		"acks":                         1,
+		"linger.ms":                    3,
+		// "compression_type":				"gzip or snappy?",
 
 		// "delivery.report.only.error": true, // Set this to reduce report volume -> This crashes!  Prints: Failed to create producer!
 	})

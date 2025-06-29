@@ -16,7 +16,7 @@ func run(workerCount uint8, messageCount int, kafkaProducer *kafka.Producer, top
 
 	// Trap SIGINT/SIGTERM so we can flush before exiting
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV)
 
 	var wg sync.WaitGroup // This can be important
 
@@ -28,8 +28,6 @@ func run(workerCount uint8, messageCount int, kafkaProducer *kafka.Producer, top
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
 					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition.Error)
-				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
 				}
 			}
 		}
@@ -49,10 +47,10 @@ func run(workerCount uint8, messageCount int, kafkaProducer *kafka.Producer, top
 	remaining := kafkaProducer.Flush(5000)
 	fmt.Printf("Remaining after flush: %d", remaining)
 
-	fmt.Println("🏁 All done. Sleeping 2s before exit to flush OS/Docker buffers...")
+	// fmt.Println("🏁 All done. Sleeping 2s before exit to flush OS/Docker buffers...")
 	/* With this, everything is printed when using 5000 messages, which means that docker is early exiting.
 	However, when doing 200K messages, it doesnt print everything, because it early exits.*/
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 
 	kafkaProducer.Close()
 
@@ -60,7 +58,7 @@ func run(workerCount uint8, messageCount int, kafkaProducer *kafka.Producer, top
 
 func main() {
 	var workerCount uint8 = 1
-	var messageCount int = 200000
+	var messageCount int = 1000000
 	var kafkaProducer = producer.CreateProducer()
 	var topicName string = "raw-topic"
 
