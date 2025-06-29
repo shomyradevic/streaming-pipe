@@ -110,7 +110,12 @@ IMPORTANT:
 	it early exits. Currently, setting up different docker-compose!
 
 
-
+(29.6.2026)
+- Re-created the topic with 5 partitions instead of 1 & Removed printing successful message delivery status. Now it sends 1M messages and 
+	does not exit earlier!!!!!!!!!!!!
+- Next steps are 
+	- increasing worker count to 3 to see if we can speed-up execution process (~14 sec for 1M messages for 1 worker)
+	- databricks
 
 
 
